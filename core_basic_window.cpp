@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
                             //std::cout << FormatText("(%f, %f, %f), {0, 0, 0, %f}", x, y, z, 255*(noise.GetNoise(x, y, z)/2+0.5)) << std::endl;
                             //_sleep(1000);
 
-                            if ( (x == 0 || x == cubeSize.x*10-10) || (y == 0 || y == cubeSize.y*10-10) || (z == 0 || z == cubeSize.z*10-10) ){ // Only run if point is on the edge of the cube
+                            if ( (camera.position.x <= 0 && x == 0) || (camera.position.x >= 0 && x == cubeSize.x*10-10) || y == cubeSize.y*10-10 || (camera.position.z <= 0 && z == 0) || (camera.position.z >= 0 && z == cubeSize.z*10-10) ){ // Only run if point is on the side or top of the cube
                                 float averagedNoise = (
                                     noise.GetNoise(x, y, z) + // Get noise on the xyz plane
                                     noise.GetNoise(y, z, w) + // Get noise on the yzw plane
