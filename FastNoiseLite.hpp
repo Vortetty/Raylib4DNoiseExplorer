@@ -48,6 +48,16 @@
 // VERSION: 1.0.1
 // https://github.com/Auburn/FastNoise
 
+//
+//
+//
+//
+// Modified to not have private access by https://github.com/Vortetty
+//
+//
+//
+//
+
 #ifndef FASTNOISELITE_H
 #define FASTNOISELITE_H
 
@@ -394,7 +404,6 @@ public:
         }
     }
 
-private:
     template <typename T>
     struct Arguments_must_be_floating_point_values;
 

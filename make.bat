@@ -19,6 +19,7 @@ set RAYLIB_SRC="raylib\src"
 set RAYLIB_RES_FILE="raylib\src\raylib.rc.data"
 set COMPILER="g++.exe"
 set MSVC="C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.27.29110\bin\Hostx86\x86\cl.exe"
+set EXTRAS=-Iraygui -Inuklear_raylib -Inuklear_raylib/nuklear -fpermissive
 ::set ORIG_PATH=%PATH%
 ::set TDM_LIBS="TDM-GCC\x86_64-w64-mingw32\lib"
 
@@ -47,7 +48,7 @@ cmd /c if exist %NAMEPART%.exe del /F %NAMEPART%.exe
 :: -std=c99  : Use C99 language standard
 :: -Wall : Enable all compilation Warnings
 :: -mwindows : Compile a Windows executable, no cmd window
-%COMPILER% %FILENAME% %RAYLIB_RES_FILE% -o %NAMEPART%.x86.exe -s -Ofast -I%RAYLIB_SRC% -L%RAYLIB_SRC% -Lextra-dlls -lraylib -lopengl32 -lgdi32 -lwinmm -std=c++17 -Wall -m32 -mwindows -mthreads -static -fdata-sections -ffunction-sections -Wl,--gc-sections
+%COMPILER% %FILENAME% %RAYLIB_RES_FILE% -o %NAMEPART%.x86.exe -s -Ofast %extras% -I%RAYLIB_SRC% -L%RAYLIB_SRC% -Lextra-dlls -lraylib -lopengl32 -lgdi32 -lwinmm -std=c++17 -Wall -m32 -mwindows -mthreads -static -fdata-sections -ffunction-sections -Wl,--gc-sections
 
 :: Max optimize with upx
 upx\upx.exe --ultra-brute -9 --best -v -f --compress-icons=1 --compress-resources=1 --strip-relocs=1 --compress-exports=1 %NAMEPART%.x86.exe

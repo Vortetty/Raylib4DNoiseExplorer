@@ -24,6 +24,40 @@
 #include "colors.h" // Color handler library
 #include <random> // Random lib
 
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_STANDARD_VARARGS
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
+#define NK_IMPLEMENTATION
+#define NK_RAYLIB_IMPLEMENTATION
+#include "nuklear.h"
+#include "nuklear_raylib.h"
+#include <limits>
+
+void add_option_int(nk_context *ctx, char* name, int* outVar, int min, int max, int step){
+    nk_layout_row_dynamic(ctx, 10, 1);
+    nk_label(ctx, FormatText("%s: %i", name, *outVar), NK_TEXT_CENTERED);
+    nk_slider_int(ctx, min, outVar, max, 1);
+    nk_layout_row_dynamic(ctx, 10, 1);
+}
+
+void add_option_float(nk_context *ctx, char* name, float* outVar, float min, float max, float step){
+    nk_layout_row_dynamic(ctx, 10, 1);
+    nk_label(ctx, FormatText("%s: %f", name, *outVar), NK_TEXT_CENTERED);
+    nk_slider_float(ctx, min, outVar, max, 1);
+    nk_layout_row_dynamic(ctx, 10, 1);
+}
+
+void add_option_list(nk_context *ctx, char* name, int* outVar, char *names[], int min, int max, int step){
+    nk_layout_row_dynamic(ctx, 10, 1);
+    nk_label(ctx, FormatText("%s: %s", name, names[*outVar]), NK_TEXT_CENTERED);
+    nk_slider_int(ctx, min, outVar, max, 1);
+    nk_layout_row_dynamic(ctx, 10, 1);
+}
+
 FastNoiseLite noise;
 
 int wrap(int kX, int const kLowerBound, int const kUpperBound) // Just wraps an integer, nothing big
@@ -65,16 +99,22 @@ int main(int argc, char* argv[])
         noise.NoiseType_Value
     }; 
     char* noiseNames[] = {
-        "Noise type: Open Simplex 2",
-        "Noise type: Open Simplex 2S",
-        "Noise type: Cellular",
-        "Noise type: Perlin",
-        "Noise type: Value Cubic",
-        "Noise type: Value"
+        "Open Simplex 2",
+        "Open Simplex 2S",
+        "Cellular",
+        "Perlin",
+        "Value Cubic",
+        "Value"
     };
     int noiseType = 1;
     noise.SetNoiseType(noiseTypes[noiseType]);
 
+    //--------------------------------------------------------------------------------------
+
+    // Gui
+    //--------------------------------------------------------------------------------------
+    struct nk_context *ctx;
+    ctx = nk_raylib_init();
     //--------------------------------------------------------------------------------------
 
     SetTargetFPS(60);
@@ -82,16 +122,42 @@ int main(int argc, char* argv[])
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
-        // Update
+        // Update Gui
         //----------------------------------------------------------------------------------
-        // TODO: Update your variables here
+        nk_raylib_input(ctx); // Update the nuklear input        
+        
+        if (nk_begin(ctx, "Config", nk_rect(0, 0, nk_window_is_collapsed(ctx, "Config") ? 28 : 230, screenHeight), NK_WINDOW_BORDER|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
+            add_option_float(ctx, "Cube X Size", &(cubeSize.x), 1, 500, 1);
+            add_option_float(ctx, "Cube Y Size", &(cubeSize.y), 1, 500, 1);
+            add_option_float(ctx, "Cube Z Size", &(cubeSize.z), 1, 500, 1);
+
+            add_option_int(ctx, "Seed", &(noise.mSeed), 0, std::numeric_limits<int>::max(), 1);
+
+            add_option_list(ctx, "Noise Type", &noiseType, noiseNames, 0, sizeof(noiseTypes)/sizeof(noiseTypes[0])-1, 1);
+        }
+        nk_end(ctx);
         //----------------------------------------------------------------------------------
 
+
+        // Update Noise from Gui
+        //----------------------------------------------------------------------------------
+        if (camera.target.x != cubeSize.x/2 || camera.target.y != cubeSize.y/2 || camera.target.z != cubeSize.z/2) {
+            camera.position = {cubeSize.x+cubeSize.x/2, cubeSize.y+cubeSize.y/4, cubeSize.z+cubeSize.z/2};
+            camera.target = {cubeSize.x/2, cubeSize.y/2, cubeSize.z/2};
+        }
+        noise.mNoiseType = noiseTypes[noiseType];
+        //----------------------------------------------------------------------------------
+
+
+        // Update Other Vars
+        //----------------------------------------------------------------------------------
         camAngle += 1.0f/10.0f; // Update camera rotation
 
         if (camAngle >= 360) camAngle = 0; // If degrees is 360 or greater set degrees to 0
 
         camera.position = { cosf(camAngle*PI/180)*(cubeSize.x+cubeSize.x/2)+camera.target.x, camera.position.y, sinf(camAngle*PI/180)*(cubeSize.z+cubeSize.z/2)+camera.target.z }; // Set camera's position to computed position on circle
+        //----------------------------------------------------------------------------------
+
 
         // Draw
         //----------------------------------------------------------------------------------
@@ -143,46 +209,12 @@ int main(int argc, char* argv[])
             
             EndMode3D(); // Stop 3d mode
 
-            DrawFPS(10, 10); // Draw fps indicator
-            DrawText(noiseNames[noiseType], 10, 40, 20, LIME);
-            DrawText(FormatText("Cube size: {%i, %i, %i}", (int)cubeSize.x, (int)cubeSize.y, (int)cubeSize.z), 10, 70, 20, LIME);
-            DrawText(FormatText("Seed: %i", seed), 10, 100, 20, LIME);
-            DrawText("Controls: [SPACE] changes noise type\n[R] re-seeds noise\n[+] and [-] Change cube size", 10, screenHeight-85, 20, LIME);
+            DrawFPS(nk_window_is_collapsed(ctx, "Config") ? 38 : 240, 10); // Draw fps indicator
+
+            nk_raylib_render(ctx); // Draw Nuklear Windows
 
         EndDrawing(); // Stop drawing and display what was drawn
         //----------------------------------------------------------------------------------
-
-        switch (GetKeyPressed()){
-            case KEY_SPACE:
-                noiseType = wrap(noiseType + 1, 0, sizeof(noiseTypes)/sizeof(noiseTypes[0])-1);
-                noise.SetNoiseType(noiseTypes[noiseType]);
-                break;
-            case KEY_R:
-                seed = rand();
-                noise.SetSeed(seed);
-                break;
-            case KEY_EQUAL: //actually the plus key
-                cubeSize = {cubeSize.x+1, cubeSize.y+1, cubeSize.z+1};
-                camera.position = { cubeSize.x+cubeSize.x/2, cubeSize.y+cubeSize.y/4, cubeSize.z+cubeSize.z/2 };
-                camera.target = {cubeSize.x/2, cubeSize.y/2, cubeSize.z/2};
-                break;
-            case KEY_KP_ADD: //actually the plus key
-                cubeSize = {cubeSize.x+1, cubeSize.y+1, cubeSize.z+1};
-                camera.position = { cubeSize.x+cubeSize.x/2, cubeSize.y+cubeSize.y/4, cubeSize.z+cubeSize.z/2 };
-                camera.target = {cubeSize.x/2, cubeSize.y/2, cubeSize.z/2};
-                break;
-
-            case KEY_MINUS:
-                cubeSize = {cubeSize.x-1, cubeSize.y-1, cubeSize.z-1};
-                camera.position = { cubeSize.x+cubeSize.x/2, cubeSize.y+cubeSize.y/4, cubeSize.z+cubeSize.z/2 };
-                camera.target = {cubeSize.x/2, cubeSize.y/2, cubeSize.z/2};
-                break;
-            case KEY_KP_SUBTRACT: //actually the minus key
-                cubeSize = {cubeSize.x-1, cubeSize.y-1, cubeSize.z-1};
-                camera.position = { cubeSize.x+cubeSize.x/2, cubeSize.y+cubeSize.y/4, cubeSize.z+cubeSize.z/2 };
-                camera.target = {cubeSize.x/2, cubeSize.y/2, cubeSize.z/2};
-                break;
-        }
     }
 
     // De-Initialization
