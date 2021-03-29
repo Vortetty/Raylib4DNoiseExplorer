@@ -194,18 +194,24 @@ int main(int argc, char* argv[])
             add_option_list(ctx, "Noise Type", (int*)&(noise.mNoiseType), noiseNames);
             add_option_list(ctx, "Noise Modifier", &noiseMod, noiseMods);
 
+            add_option_float(ctx, "Frequency", &(noise.mFrequency), 0.01, 0.5, 0.01);
+            add_option_float(ctx, "Gain", &(noise.mGain), 0.1, 10, 0.1);
+            add_option_float(ctx, "Lacunarity", &(noise.mLacunarity), 0.1, 10, 0.1);
+
             // Extra Cellular settings
             if (noise.mNoiseType == noise.NoiseType_Cellular){
                 add_option_separator(ctx, "Cellular Settings");
                 add_option_list(ctx, "Distance Function", (int*)&(noise.mCellularDistanceFunction), cellularDistanceFuncs);
                 add_option_list(ctx, "Return Type", (int*)&(noise.mCellularReturnType), cellularReturnTypes);
-                add_option_float(ctx, "Jitter Modifier", &(noise.mCellularJitterModifier), 0.1, 5, 0.1);
             }
 
             // Extra Fractal Settings
             if (noiseMod == 1){
                 add_option_separator(ctx, "Fractal Settings");
                 add_option_list(ctx, "Fractal Type", (int*)&(noise.mFractalType), fractals);
+                add_option_int(ctx, "Noise Octaves", &(noise.mOctaves), 1, 50, 1);
+                noise.CalculateFractalBounding(); // Recalculate bounding since octaves changed
+                add_option_float(ctx, "Weighted Strength", &(noise.mWeightedStrength), 0, 25, 0.1);
             }
 
             // Extra Domain Warp Settings
